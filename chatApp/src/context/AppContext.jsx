@@ -3,6 +3,7 @@ import { createContext, useEffect, useState } from "react";
 import { auth, db } from "../config/firebase";
 import { useNavigate } from "react-router-dom";
 import PropTypes from 'prop-types';
+import { toast } from 'react-toastify';
 
 export const AppContext = createContext();
 
@@ -16,39 +17,33 @@ const AppContextProvider = (props) => {
 
     const loadUserData = async (uid) => {
         try {
-            const userRef = doc(db, 'users', uid);
+            const userRef = doc(db, 'users', uid); 
             const userSnap = await getDoc(userRef);
-
+            
             if (userSnap.exists()) {
                 const userData = userSnap.data();
                 setUserData(userData);
-
                 if (userData.avatar && userData.name) {
                     navigate('/chat');
                 } else {
                     navigate('/profile');
                 }
-
-                // Update lastSeen when loading user data
                 await updateDoc(userRef, {
                     lastSeen: Date.now(),
                 });
-
-                // Set up an interval to update lastSeen every minute
-                const intervalId = setInterval(async () => {
+                setInterval(async () => {
                     if (auth.currentUser) {
                         await updateDoc(userRef, {
                             lastSeen: Date.now(),
                         });
-                    } else {
-                        clearInterval(intervalId);
                     }
                 }, 60000);
             } else {
-                console.error("User not found");
+                toast.error("User not found");
             }
-        } catch (err) {
-            console.error("Error loading user data:", err);
+        } catch (error) {
+            console.error("Error loading user data:", error);
+            toast.error(error.message); 
         }
     };
 
