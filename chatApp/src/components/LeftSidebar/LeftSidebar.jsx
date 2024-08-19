@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 
 const LeftSidebar = () => {
     const navigate = useNavigate();
-    const { userData, chatData, setChatUser, setMessagesId } = useContext(AppContext);
+    const { userData, chatData, setChatUser, setMessagesId, setChatVisible } = useContext(AppContext);
     const [user, setUser] = useState(null);
     const [showSearch, setShowSearch] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +17,7 @@ const LeftSidebar = () => {
     const inputHandler = async (e) => {
         try {
             const input = e.target.value;
-            if (input.length < 3) return; // Evitar búsquedas con menos de 3 caracteres
+            if (input.length < 3) return; 
             setIsLoading(true);
             const userRef = collection(db, 'users');
             const q = query(userRef, where("username", "==", input.toLowerCase()));
@@ -37,14 +37,15 @@ const LeftSidebar = () => {
         } catch (err) {
             setIsLoading(false);
             console.error("Error fetching user data:", err);
-            // Mostrar mensaje de error al usuario
+            // Show error message to the user
+            toast.error("Error fetching user data");
         }
     };
 
     const handleUserSelect = async () => {
         await addChat(); // Call addChat when a user is selected
         setShowSearch(false); // Optionally hide search results after selection
-        // Agregar efecto visual para indicar selección de usuario
+        // Add visual effect to indicate user selection
     };
 
     const addChat = async () => {
@@ -67,11 +68,10 @@ const LeftSidebar = () => {
             });
         } catch (err) {
             console.error("Error adding chat:", err);
+            toast.error("Error adding chat");
         }
     };
 
-    //Establece estado de los datos del chat seleccionado
-    
     const setChat = async (item) => {
         try {
             setMessagesId(item.messagesId);
@@ -88,6 +88,7 @@ const LeftSidebar = () => {
                     await updateDoc(userChatRef, {
                         chatsData: userChatData.chatsData
                     });
+                    setChatVisible(true);
                 }
             }
         } catch (error) {
@@ -97,7 +98,7 @@ const LeftSidebar = () => {
 
     useEffect(() => {
         return () => {
-            // Limpiar suscripción a onSnapshot cuando el componente se desmonte
+            // Clean up subscription to onSnapshot when the component unmounts
         }
     }, []);
 
@@ -118,7 +119,7 @@ const LeftSidebar = () => {
                 <div className="ls-search">
                     <img src={assets.search_icon} alt="Search Icon" />
                     <input type="text" placeholder='Search here' onChange={inputHandler} />
-                    {isLoading && <div className="loading-indicator">Cargando...</div>}
+                    {isLoading && <div className="loading-indicator">Loading...</div>}
                 </div>
             </div>
             <div className="ls-list">
@@ -143,4 +144,4 @@ const LeftSidebar = () => {
     );
 };
 
-export default LeftSidebar
+export default LeftSidebar;

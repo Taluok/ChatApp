@@ -8,7 +8,7 @@ import { db } from '../../config/firebase.js';
 import upload from '../../lib/upload'; // Asegúrate de que esta ruta sea correcta
 
 const ChatBox = () => {
-    const { userData, messagesId, chatUser, messages, setMessages } = useContext(AppContext);
+    const { userData, messagesId, chatUser, messages, setMessages, setChatVisible } = useContext(AppContext);
     const [input, setInput] = useState("");
 
     const sendMessage = async () => {
@@ -63,6 +63,7 @@ const ChatBox = () => {
                 <img src={chatUser.userData.avatar} alt={chatUser.userData.name} />
                 <p>{chatUser.userData.name}{Date.now()-chatUser.userData.lastSeen <= 70000 ? <img className='dot' src={assets.green_dot} alt=''/> : null}</p>
                 <img src={assets.help_icon} className='help' alt="Help" />
+                <img onClick={()=>setChatVisible(false)} src={assets.arrow_icon} className='arrow' alt="" />
             </div>
 
             <div className="chat-msg">

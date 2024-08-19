@@ -1,7 +1,7 @@
 import './Login.css';
 import assets from '../../assets/assets.js';
 import { useState } from 'react';
-import { signup, login } from '../../config/firebase.js';
+import { signup, login, resetPass } from '../../config/firebase.js';
 
 const Login = () => {
 
@@ -69,6 +69,7 @@ const Login = () => {
                             <span onClick={() => setCurrState("Sign Up")}>Click here</span>
                         </p>
                     )}
+                    {currState === "Login" ?<p className="login-toggle"> Forgot Password ?<span onClick={() => resetPass(email)}>Reset here</span></p> :null }
                 </div>
             </form>
         </div>

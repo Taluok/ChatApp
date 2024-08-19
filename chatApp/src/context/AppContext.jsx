@@ -14,6 +14,7 @@ const AppContextProvider = (props) => {
     const [messagesId, setMessagesId] = useState(null);
     const [messages, setMessages] = useState([]);
     const [chatUser, setChatUser] = useState(null);
+    const [chatVisible, setChatVisible] = useState(false);
 
     const loadUserData = async (uid) => {
         try {
@@ -34,7 +35,7 @@ const AppContextProvider = (props) => {
                 setInterval(async () => {
                     if (auth.currentUser) {
                         await updateDoc(userRef, {
-                            lastSeen: Date.now(),
+                            lastSeen: Date.now()
                         });
                     }
                 }, 60000);
@@ -78,7 +79,9 @@ const AppContextProvider = (props) => {
         messagesId,
         setMessagesId,
         chatUser,
-        setChatUser
+        setChatUser,
+        chatVisible,
+        setChatVisible
     };
 
     return (
