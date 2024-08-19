@@ -2,9 +2,10 @@ import './ChatBox.css';
 import assets from '../../assets/assets.js';
 import { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { doc, updateDoc, arrayUnion, getDoc, onSnapshot } from 'firebase/firestore'; 
-import { toast } from 'react-toastify'; 
-import { db } from '../../firebase'; 
+import { doc, updateDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
+import { toast } from 'react-toastify';
+import { db } from '../../config/firebase.js';
+import upload from '../../lib/upload'; // Asegúrate de que esta ruta sea correcta
 
 const ChatBox = () => {
     const { userData, messagesId, chatUser, messages, setMessages } = useContext(AppContext);
@@ -17,37 +18,33 @@ const ChatBox = () => {
                     messages: arrayUnion({
                         sId: userData.id,
                         text: input,
-                        createAt: new Date()
+                        createdAt: new Date()
                     })
                 });
 
-                const userIDs = [chatUser.rId, userData.id];
-
-                userIDs.forEach(async (id) => {
-                    const userChatsRef = doc(db, 'chats', id);
-                    const userChatSnapshot = await getDoc(userChatsRef);
-
-                    if (userChatSnapshot.exists()) {
-                        const userChatData = userChatSnapshot.data();
-                        const chatIndex = userChatData.chatsData.findIndex((c) => c.messagId === messagesId);
-                        userChatData.chatsData[chatIndex].lastMessage = input.slice(0, 30);
-                        userChatData.chatsData[chatIndex].UpdateAt = Date.now();
-                        
-                        if (userChatData.chatsData[chatIndex].rId === userData.id) {
-                            userChatData.chatsData[chatIndex].messageSeen = false;
-                        }
-                        
-                        await updateDoc(userChatsRef, {
-                            chatsData: userChatData.chatsData
-                        });
-                    }
-                });
-                setInput(""); 
+                setInput("");
             }
         } catch (error) {
             toast.error(error.message);
         }
     };
+
+    const sendImage = async (e) => {
+        try {
+            const fileUrl = await upload(e.target.files[0]);
+            if (fileUrl && messagesId) {
+                await updateDoc(doc(db, 'messages', messagesId), {
+                    messages: arrayUnion({
+                        sId: userData.id,
+                        image: fileUrl,
+                        createdAt: new Date()
+                    })
+                });
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
 
     useEffect(() => {
         if (messagesId) {
@@ -58,7 +55,7 @@ const ChatBox = () => {
                 unSub();
             };
         }
-    }, [messagesId, setMessages]); 
+    }, [messagesId, setMessages]);
 
     return chatUser ? (
         <div className="chat-box">
@@ -71,29 +68,33 @@ const ChatBox = () => {
             <div className="chat-msg">
                 {messages.map((msg, index) => (
                     <div key={index} className={msg.sId === userData.id ? "r-msg" : "s-msg"}>
-                        <p className="msg">{msg.text}</p>
+                        {msg.image ? (
+                            <img className='msg-img' src={msg.image} alt="Sent" />
+                        ) : (
+                            <p className='msg'>{msg.text}</p>
+                        )}
                         <div>
-                            <img src={assets.profile_img} alt={userData.name} />
-                            <p>{new Date(msg.createAt).toLocaleTimeString()}</p>
+                            <img src={msg.sId === userData.id ? userData.avatar : chatUser.userData.avatar} alt={userData.name} />
+                            <p>{new Date(msg.createdAt).toLocaleTimeString()}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             <div className="chat-input">
-                <input 
-                    onChange={(e) => setInput(e.target.value)} 
-                    value={input} 
-                    type="text" 
-                    className="text" 
-                    placeholder='Send a message' 
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()} 
+                <input
+                    onChange={(e) => setInput(e.target.value)}
+                    value={input}
+                    type="text"
+                    className="text"
+                    placeholder='Send a message'
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                 />
-                <input type="file" id='image' accept='image/png, image/jpeg' hidden />
-                <img 
-                    src={assets.send_button} 
-                    alt="Send" 
-                    onClick={sendMessage} 
+                <input type="file" id='image' accept='image/png, image/jpeg' hidden onChange={sendImage} />
+                <img
+                    src={assets.send_button}
+                    alt="Send"
+                    onClick={sendMessage}
                 />
             </div>
         </div>
@@ -106,4 +107,3 @@ const ChatBox = () => {
 }
 
 export default ChatBox;
-

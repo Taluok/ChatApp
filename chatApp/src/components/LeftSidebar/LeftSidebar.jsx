@@ -1,27 +1,32 @@
 import './LeftSidebar.css';
 import assets from '../../assets/assets';
 import { useNavigate } from 'react-router-dom';
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { collection, query, where, getDocs, doc, setDoc, arrayUnion } from 'firebase/firestore'; 
-import { db } from '../../firebase'; 
+import { collection, query, where, getDocs, doc, setDoc, arrayUnion, updateDoc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { toast } from 'react-toastify';
 
 const LeftSidebar = () => {
     const navigate = useNavigate();
-    const { userData, chatData, chatUser, setChatUser, setMessagesId, messagesId } = useContext(AppContext);
+    const { userData, chatData, setChatUser, setMessagesId } = useContext(AppContext);
     const [user, setUser] = useState(null);
     const [showSearch, setShowSearch] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const inputHandler = async (e) => {
         try {
-            const input = e.target.value; 
-            const userRef = collection(db, 'users'); 
-            const q = query(userRef, where("username", "==", input.toLowerCase())); 
+            const input = e.target.value;
+            if (input.length < 3) return; // Evitar búsquedas con menos de 3 caracteres
+            setIsLoading(true);
+            const userRef = collection(db, 'users');
+            const q = query(userRef, where("username", "==", input.toLowerCase()));
             const querySnap = await getDocs(q);
-            
+            setIsLoading(false);
+
             if (!querySnap.empty && querySnap.docs[0].data().id !== userData.id) {
                 const userExists = chatData.some(chatUser => chatUser.rId === querySnap.docs[0].data().id);
-                
+
                 if (!userExists) {
                     setUser(querySnap.docs[0].data());
                     setShowSearch(true); // Show search results when a user is found
@@ -30,18 +35,20 @@ const LeftSidebar = () => {
                 setShowSearch(false);
             }
         } catch (err) {
-            console.error("Error fetching user data:", err); 
+            setIsLoading(false);
+            console.error("Error fetching user data:", err);
+            // Mostrar mensaje de error al usuario
         }
     };
 
     const handleUserSelect = async () => {
         await addChat(); // Call addChat when a user is selected
         setShowSearch(false); // Optionally hide search results after selection
+        // Agregar efecto visual para indicar selección de usuario
     };
 
     const addChat = async () => {
         const messagesRef = collection(db, "messages");
-        const chatsRef = collection(db, "chats");
         try {
             const newMessageRef = doc(messagesRef);
             await setDoc(newMessageRef, {
@@ -54,22 +61,45 @@ const LeftSidebar = () => {
                 })
             });
 
-            // Example of using chatsRef if needed
-            await setDoc(doc(chatsRef, userData.id), {
-                // Add any relevant chat data here
+            await setDoc(doc(db, "chats", userData.id), {
                 lastChat: newMessageRef.id,
                 updatedAt: Date.now(),
             });
         } catch (err) {
-            console.error("Error adding chat:", err); 
+            console.error("Error adding chat:", err);
         }
     };
 
+    //Establece estado de los datos del chat seleccionado
+    
     const setChat = async (item) => {
-        setMessagesId(item.messagesId);
-        setChatUser(item)
-        
-    }
+        try {
+            setMessagesId(item.messagesId);
+            setChatUser(item);
+            const userChatRef = doc(db, 'chats', userData.id);
+            const userChatSnapshot = await getDoc(userChatRef);
+            
+            if (userChatSnapshot.exists()) {
+                const userChatData = userChatSnapshot.data();
+                const chatIndex = userChatData.chatsData.findIndex((c) => c.messagesId === item.messagesId);
+                
+                if (chatIndex !== -1) {
+                    userChatData.chatsData[chatIndex].messageSeen = true;
+                    await updateDoc(userChatRef, {
+                        chatsData: userChatData.chatsData
+                    });
+                }
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            // Limpiar suscripción a onSnapshot cuando el componente se desmonte
+        }
+    }, []);
 
     return (
         <div className='ls'>
@@ -88,6 +118,7 @@ const LeftSidebar = () => {
                 <div className="ls-search">
                     <img src={assets.search_icon} alt="Search Icon" />
                     <input type="text" placeholder='Search here' onChange={inputHandler} />
+                    {isLoading && <div className="loading-indicator">Cargando...</div>}
                 </div>
             </div>
             <div className="ls-list">
@@ -98,7 +129,7 @@ const LeftSidebar = () => {
                     </div>
                 ) : (
                     chatData.map((item, index) => (
-                        <div onClick={()=>setChat(item)} key={index} className="friends">
+                        <div onClick={() => setChat(item)} key={index} className="friends">
                             <img src={item.userData.avatar} alt="Profile" />
                             <div>
                                 <p>{item.userData.name}</p>
@@ -112,4 +143,4 @@ const LeftSidebar = () => {
     );
 };
 
-export default LeftSidebar;
+export default LeftSidebar

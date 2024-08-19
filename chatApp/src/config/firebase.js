@@ -1,9 +1,10 @@
-// Import the functions you need from the SDKs you need
+
 import { initializeApp } from "firebase/app";
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
-import { toast } from "react-toastify"
+import { getFirestore, doc, setDoc } from "firebase/firestore"; 
+import { toast } from "react-toastify";
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDzx0I7101mdG17IjVfBmgspPWoHteSgjI",
     authDomain: "chatapp-gs-463f2.firebaseapp.com",
@@ -18,6 +19,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Sign up function
 const signup = async (username, email, password) => {
     try {
         const res = await createUserWithEmailAndPassword(auth, email, password);
@@ -44,21 +46,24 @@ const signup = async (username, email, password) => {
     }
 }
 
+// Login function
 const login = async (email, password) => {
     try {
-        await signInWithEmailAndPassword(auth,email,password)
+        await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
         console.error(err);
         toast.error(err.code.split('/')[1].split('-').join(""));
     }
 }
 
-const logout = async() => {
+// Logout function
+const logout = async () => {
     try {
-        await signOut(auth)
+        await signOut(auth);
     } catch (err) {
         toast.error(err.code.split('/')[1].split('-').join(""));
     }
 }
 
-export { signup, login, logout, auth, db };
+// Export functions and variables
+export { signup, login, logout, auth, db }
